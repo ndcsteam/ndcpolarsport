@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Bluetooth 心率接收器</title>
+    <title>Web Bluetooth 多裝置心率接收器</title>
     <style>
         :root {
             --primary-color: #007bff;
@@ -12,242 +12,478 @@
             --card-bg-color: #ffffff;
             --success-color: #28a745;
             --error-color: #dc3545;
+            --warning-color: #ffc107;
         }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background-color: var(--background-color);
             color: var(--text-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
             margin: 0;
             padding: 20px;
-            box-sizing: border-box;
+            min-height: 100vh;
         }
-        .container {
-            background: var(--card-bg-color);
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        
+        .header {
             text-align: center;
-            width: 100%;
-            max-width: 400px;
+            margin-bottom: 30px;
         }
-        h1 {
-            font-size: 1.8rem;
-            margin-bottom: 15px;
+        
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
             color: var(--primary-color);
         }
-        p {
+        
+        .header p {
             font-size: 1rem;
             line-height: 1.6;
-            margin-bottom: 25px;
+            color: #666;
+            max-width: 600px;
+            margin: 0 auto 20px;
         }
+        
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
         #connect-button {
             background-color: var(--primary-color);
             color: white;
             border: none;
-            padding: 15px 30px;
+            padding: 15px 40px;
             font-size: 1.1rem;
             font-weight: bold;
             border-radius: 8px;
             cursor: pointer;
             transition: background-color 0.3s ease, transform 0.2s ease;
-            width: 100%;
         }
+        
         #connect-button:hover {
             background-color: #0056b3;
         }
+        
         #connect-button:active {
             transform: scale(0.98);
         }
+        
         #status {
-            margin-top: 25px;
+            text-align: center;
+            margin-top: 15px;
             font-size: 0.9rem;
             color: #666;
             min-height: 20px;
         }
-        .heart-rate-display {
-            margin-top: 20px;
-            padding: 20px;
-            border: 2px solid var(--background-color);
-            border-radius: 10px;
+        
+        .devices-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
         }
-        .heart-rate-display .label {
-            font-size: 1rem;
-            color: #555;
+        
+        .device-card {
+            background: var(--card-bg-color);
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            padding: 25px;
+            position: relative;
+            animation: slideIn 0.3s ease-out;
         }
-        .heart-rate-display .value {
-            font-size: 4.5rem;
-            font-weight: bold;
-            color: var(--error-color);
-            line-height: 1.2;
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        .heart-rate-display .unit {
-            font-size: 1.2rem;
-            color: #555;
-            margin-left: 5px;
+        
+        .device-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--background-color);
         }
+        
         .device-info {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: var(--background-color);
-            border-radius: 8px;
-            text-align: left;
+            flex: 1;
         }
-        .device-info .info-row {
-            margin-bottom: 10px;
-            font-size: 0.9rem;
-        }
-        .device-info .info-label {
+        
+        .device-name {
+            font-size: 1.2rem;
             font-weight: bold;
-            color: #555;
-        }
-        .device-info .info-value {
             color: var(--primary-color);
+            margin-bottom: 5px;
+            word-break: break-word;
+        }
+        
+        .device-id {
+            font-size: 0.8rem;
+            color: #999;
+            font-family: monospace;
             word-break: break-all;
+        }
+        
+        .disconnect-button {
+            background-color: var(--error-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            white-space: nowrap;
+            margin-left: 10px;
+        }
+        
+        .disconnect-button:hover {
+            background-color: #c82333;
+        }
+        
+        .heart-rate-display {
+            text-align: center;
+            padding: 30px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            color: white;
+        }
+        
+        .heart-rate-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        
+        .heart-rate-value {
+            font-size: 5rem;
+            font-weight: bold;
+            line-height: 1;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .heart-rate-unit {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .connection-status {
+            margin-top: 15px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+        
+        .status-connected {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: var(--success-color);
+            border: 1px solid var(--success-color);
+        }
+        
+        .status-disconnected {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: var(--error-color);
+            border: 1px solid var(--error-color);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+        
+        .empty-state-text {
+            font-size: 1.1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .devices-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .heart-rate-value {
+                font-size: 4rem;
+            }
         }
     </style>
 </head>
 <body>
-
-    <div class="container">
-        <h1>Polar OH1+ 連接器</h1>
-        <p>點擊下方按鈕，並在彈出視窗中選擇您的 Polar OH1+ 設備以開始接收心率數據。</p>
-        
-        <button id="connect-button">連接心率感測器</button>
-        
-        <div id="status">等待連接...</div>
-        
-        <div class="heart-rate-display">
-            <div class="label">即時心率</div>
-            <div class="value" id="heart-rate-value">--</div>
-            <div class="unit">BPM</div>
-        </div>
-
-        <div class="device-info" id="device-info" style="display: none;">
-            <div class="info-row">
-                <span class="info-label">裝置名稱：</span>
-                <span class="info-value" id="device-name">--</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">裝置ID：</span>
-                <span class="info-value" id="device-id">--</span>
-            </div>
+    <div class="header">
+        <h1>Polar 多裝置心率監控</h1>
+        <p>支持同時連接多個Polar心率感測器，實時監控多位使用者的心率數據。</p>
+    </div>
+    
+    <div class="controls">
+        <button id="connect-button">+ 連接新裝置</button>
+        <div id="status">點擊按鈕開始連接裝置...</div>
+    </div>
+    
+    <div id="devices-container" class="devices-container">
+        <div class="empty-state">
+            <div class="empty-state-icon">📱</div>
+            <div class="empty-state-text">尚未連接任何裝置</div>
         </div>
     </div>
 
     <script>
-        // 獲取頁面上的元素
+        // 儲存所有已連接的設備
+        const connectedDevices = new Map();
+        
+        // 獲取頁面元素
         const connectButton = document.getElementById('connect-button');
         const statusDisplay = document.getElementById('status');
-        const heartRateValueDisplay = document.getElementById('heart-rate-value');
-        const deviceInfoDisplay = document.getElementById('device-info');
-        const deviceNameDisplay = document.getElementById('device-name');
-        const deviceIdDisplay = document.getElementById('device-id');
-
-        // 當點擊連接按鈕時觸發
+        const devicesContainer = document.getElementById('devices-container');
+        
+        // 點擊連接按鈕
         connectButton.addEventListener('click', () => {
             connectToDevice();
         });
-
-        // 連接到藍牙設備的主函數
+        
+        // 連接到新的藍牙設備
         async function connectToDevice() {
             try {
                 statusDisplay.textContent = '正在掃描設備...';
                 console.log('Requesting Bluetooth Device...');
-
-                // 請求藍牙設備，過濾只顯示提供 'heart_rate' 服務的設備
-                // 這是 Web Bluetooth API 的入口點
+                
+                // 請求藍牙設備
                 const device = await navigator.bluetooth.requestDevice({
                     filters: [{ services: ['heart_rate'] }]
                 });
-
-                statusDisplay.textContent = `已找到設備: ${device.name}，正在連接...`;
+                
+                // 檢查設備是否已經連接
+                if (connectedDevices.has(device.id)) {
+                    statusDisplay.textContent = `設備 ${device.name} 已經連接！`;
+                    return;
+                }
+                
+                statusDisplay.textContent = `正在連接 ${device.name}...`;
                 console.log('Connecting to GATT Server...');
                 
-                // 連接到設備的 GATT 伺服器
+                // 連接到 GATT 伺服器
                 const server = await device.gatt.connect();
-
-                statusDisplay.textContent = '已連接，正在獲取心率服務...';
+                
+                statusDisplay.textContent = '正在獲取心率服務...';
                 console.log('Getting Heart Rate Service...');
-
-                // 獲取 'heart_rate' 服務
+                
+                // 獲取心率服務
                 const service = await server.getPrimaryService('heart_rate');
-
-                statusDisplay.textContent = '已獲取服務，正在獲取心率測量特徵...';
+                
+                statusDisplay.textContent = '正在獲取心率測量特徵...';
                 console.log('Getting Heart Rate Measurement Characteristic...');
                 
-                // 從服務中獲取 'heart_rate_measurement' 特徵
+                // 獲取心率測量特徵
                 const characteristic = await service.getCharacteristic('heart_rate_measurement');
-
+                
                 statusDisplay.textContent = '正在訂閱心率數據...';
                 console.log('Starting notifications...');
-
-                // 開始監聽此特徵的數據變化
+                
+                // 開始監聽數據
                 await characteristic.startNotifications();
                 
-                // 為特徵值變化添加事件監聽器
-                characteristic.addEventListener('characteristicvaluechanged', handleHeartRateChanged);
-
-                statusDisplay.textContent = '連接成功！正在接收數據...';
-                console.log('Notifications started');
-
-                // 顯示裝置資訊
-                deviceNameDisplay.textContent = device.name || '未知裝置';
-                deviceIdDisplay.textContent = device.id;
-                deviceInfoDisplay.style.display = 'block';
-                console.log(`Device Name: ${device.name}`);
-                console.log(`Device ID: ${device.id}`);
-
-                // 監聽設備斷開連接的事件
-                device.addEventListener('gattserverdisconnected', onDisconnected);
-
+                // 創建設備數據對象
+                const deviceData = {
+                    device: device,
+                    server: server,
+                    service: service,
+                    characteristic: characteristic,
+                    heartRate: '--',
+                    connected: true
+                };
+                
+                // 添加到已連接設備列表
+                connectedDevices.set(device.id, deviceData);
+                
+                // 創建設備卡片UI
+                createDeviceCard(device.id, deviceData);
+                
+                // 監聽心率數據變化
+                characteristic.addEventListener('characteristicvaluechanged', (event) => {
+                    handleHeartRateChanged(device.id, event);
+                });
+                
+                // 監聽設備斷開連接
+                device.addEventListener('gattserverdisconnected', () => {
+                    onDisconnected(device.id);
+                });
+                
+                statusDisplay.textContent = `成功連接 ${device.name}！`;
+                console.log(`Device ${device.name} connected successfully`);
+                
+                // 更新空狀態顯示
+                updateEmptyState();
+                
             } catch (error) {
-                statusDisplay.textContent = `錯誤: ${error.message}`;
+                statusDisplay.textContent = `連接失敗: ${error.message}`;
                 console.error('Connection failed!', error);
             }
         }
-
-        // 處理接收到的心率數據
-        function handleHeartRateChanged(event) {
-            const value = event.target.value; // 這是一個 DataView 物件
+        
+        // 創建設備卡片
+        function createDeviceCard(deviceId, deviceData) {
+            const card = document.createElement('div');
+            card.className = 'device-card';
+            card.id = `device-${deviceId}`;
+            
+            card.innerHTML = `
+                <div class="device-header">
+                    <div class="device-info">
+                        <div class="device-name">${deviceData.device.name || '未知裝置'}</div>
+                        <div class="device-id">${deviceId}</div>
+                    </div>
+                    <button class="disconnect-button" onclick="disconnectDevice('${deviceId}')">
+                        斷開
+                    </button>
+                </div>
+                
+                <div class="heart-rate-display">
+                    <div class="heart-rate-label">即時心率</div>
+                    <div class="heart-rate-value" id="heart-rate-${deviceId}">--</div>
+                    <div class="heart-rate-unit">BPM</div>
+                </div>
+                
+                <div class="connection-status status-connected" id="status-${deviceId}">
+                    ● 已連接
+                </div>
+            `;
+            
+            devicesContainer.appendChild(card);
+        }
+        
+        // 處理心率數據變化
+        function handleHeartRateChanged(deviceId, event) {
+            const value = event.target.value;
             const heartRate = parseHeartRate(value);
             
-            // 更新頁面上的心率值
-            heartRateValueDisplay.textContent = heartRate;
-            console.log(`Heart Rate: ${heartRate} BPM`);
-        }
-
-        // 解析從藍牙設備傳來的原始數據
-        function parseHeartRate(dataView) {
-            // 讀取第一個位元組的旗標
-            const flags = dataView.getUint8(0);
+            // 更新設備數據
+            const deviceData = connectedDevices.get(deviceId);
+            if (deviceData) {
+                deviceData.heartRate = heartRate;
+            }
             
-            // 檢查旗標的第0位，判斷心率值是 UINT8 還是 UINT16
+            // 更新UI顯示
+            const heartRateElement = document.getElementById(`heart-rate-${deviceId}`);
+            if (heartRateElement) {
+                heartRateElement.textContent = heartRate;
+            }
+            
+            console.log(`Device ${deviceId}: Heart Rate = ${heartRate} BPM`);
+        }
+        
+        // 解析心率數據
+        function parseHeartRate(dataView) {
+            const flags = dataView.getUint8(0);
             const is16bit = (flags & 0x01) !== 0;
             
             if (is16bit) {
-                // 如果是16位元格式，從第1和第2個位元組讀取
-                // 'true' 表示小端序 (little-endian)
                 return dataView.getUint16(1, true);
             } else {
-                // 如果是8位元格式，從第1個位元組讀取
                 return dataView.getUint8(1);
             }
         }
-
-        // 處理設備斷開連接的事件
-        function onDisconnected(event) {
-            const device = event.target;
-            statusDisplay.textContent = `設備 ${device.name} 已斷開連接。`;
-            heartRateValueDisplay.textContent = '--';
-            deviceInfoDisplay.style.display = 'none';
-            deviceNameDisplay.textContent = '--';
-            deviceIdDisplay.textContent = '--';
-            console.log(`Device ${device.name} is disconnected.`);
+        
+        // 斷開設備連接
+        function disconnectDevice(deviceId) {
+            const deviceData = connectedDevices.get(deviceId);
+            if (deviceData && deviceData.device.gatt.connected) {
+                deviceData.device.gatt.disconnect();
+                console.log(`Manually disconnected device ${deviceId}`);
+            }
         }
+        
+        // 處理設備斷開連接
+        function onDisconnected(deviceId) {
+            const deviceData = connectedDevices.get(deviceId);
+            if (deviceData) {
+                deviceData.connected = false;
+                
+                // 更新UI狀態
+                const statusElement = document.getElementById(`status-${deviceId}`);
+                if (statusElement) {
+                    statusElement.className = 'connection-status status-disconnected';
+                    statusElement.textContent = '● 已斷開連接';
+                }
+                
+                const heartRateElement = document.getElementById(`heart-rate-${deviceId}`);
+                if (heartRateElement) {
+                    heartRateElement.textContent = '--';
+                }
+                
+                console.log(`Device ${deviceId} disconnected`);
+                
+                // 3秒後移除卡片
+                setTimeout(() => {
+                    removeDeviceCard(deviceId);
+                }, 3000);
+            }
+        }
+        
+        // 移除設備卡片
+        function removeDeviceCard(deviceId) {
+            const card = document.getElementById(`device-${deviceId}`);
+            if (card) {
+                card.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => {
+                    card.remove();
+                    connectedDevices.delete(deviceId);
+                    updateEmptyState();
+                }, 300);
+            }
+        }
+        
+        // 更新空狀態顯示
+        function updateEmptyState() {
+            const hasDevices = connectedDevices.size > 0;
+            const emptyState = devicesContainer.querySelector('.empty-state');
+            
+            if (hasDevices && emptyState) {
+                emptyState.remove();
+            } else if (!hasDevices && !emptyState) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'empty-state';
+                emptyDiv.innerHTML = `
+                    <div class="empty-state-icon">📱</div>
+                    <div class="empty-state-text">尚未連接任何裝置</div>
+                `;
+                devicesContainer.appendChild(emptyDiv);
+            }
+        }
+        
+        // 添加滑出動畫
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideOut {
+                from {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+                to {
+                    opacity: 0;
+                    transform: translateY(-20px);
+                }
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 
 </body>
