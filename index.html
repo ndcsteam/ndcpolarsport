@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Bluetooth 心率接收器</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --background-color: #f4f7f6;
+            --text-color: #333;
+            --card-bg-color: #ffffff;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background: var(--card-bg-color);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+        }
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+        p {
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+        #connect-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            width: 100%;
+        }
+        #connect-button:hover {
+            background-color: #0056b3;
+        }
+        #connect-button:active {
+            transform: scale(0.98);
+        }
+        #status {
+            margin-top: 25px;
+            font-size: 0.9rem;
+            color: #666;
+            min-height: 20px;
+        }
+        .heart-rate-display {
+            margin-top: 20px;
+            padding: 20px;
+            border: 2px solid var(--background-color);
+            border-radius: 10px;
+        }
+        .heart-rate-display .label {
+            font-size: 1rem;
+            color: #555;
+        }
+        .heart-rate-display .value {
+            font-size: 4.5rem;
+            font-weight: bold;
+            color: var(--error-color);
+            line-height: 1.2;
+        }
+        .heart-rate-display .unit {
+            font-size: 1.2rem;
+            color: #555;
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Polar OH1+ 連接器</h1>
+        <p>點擊下方按鈕，並在彈出視窗中選擇您的 Polar OH1+ 設備以開始接收心率數據。</p>
+        
+        <button id="connect-button">連接心率感測器</button>
+        
+        <div id="status">等待連接...</div>
+        
+        <div class="heart-rate-display">
+            <div class="label">即時心率</div>
+            <div class="value" id="heart-rate-value">--</div>
+            <div class="unit">BPM</div>
+        </div>
+    </div>
+
+    <script>
+        // 獲取頁面上的元素
+        const connectButton = document.getElementById('connect-button');
+        const statusDisplay = document.getElementById('status');
+        const heartRateValueDisplay = document.getElementById('heart-rate-value');
+
+        // 當點擊連接按鈕時觸發
+        connectButton.addEventListener('click', () => {
+            connectToDevice();
+        });
+
+        // 連接到藍牙設備的主函數
+        async function connectToDevice() {
+            try {
+                statusDisplay.textContent = '正在掃描設備...';
+                console.log('Requesting Bluetooth Device...');
+
+                // 請求藍牙設備，過濾只顯示提供 'heart_rate' 服務的設備
+                // 這是 Web Bluetooth API 的入口點
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ services: ['heart_rate'] }]
+                });
+
+                statusDisplay.textContent = `已找到設備: ${device.name}，正在連接...`;
+                console.log('Connecting to GATT Server...');
+                
+                // 連接到設備的 GATT 伺服器
+                const server = await device.gatt.connect();
+
+                statusDisplay.textContent = '已連接，正在獲取心率服務...';
+                console.log('Getting Heart Rate Service...');
+
+                // 獲取 'heart_rate' 服務
+                const service = await server.getPrimaryService('heart_rate');
+
+                statusDisplay.textContent = '已獲取服務，正在獲取心率測量特徵...';
+                console.log('Getting Heart Rate Measurement Characteristic...');
+                
+                // 從服務中獲取 'heart_rate_measurement' 特徵
+                const characteristic = await service.getCharacteristic('heart_rate_measurement');
+
+                statusDisplay.textContent = '正在訂閱心率數據...';
+                console.log('Starting notifications...');
+
+                // 開始監聽此特徵的數據變化
+                await characteristic.startNotifications();
+                
+                // 為特徵值變化添加事件監聽器
+                characteristic.addEventListener('characteristicvaluechanged', handleHeartRateChanged);
+
+                statusDisplay.textContent = '連接成功！正在接收數據...';
+                console.log('Notifications started');
+
+                // 監聽設備斷開連接的事件
+                device.addEventListener('gattserverdisconnected', onDisconnected);
+
+            } catch (error) {
+                statusDisplay.textContent = `錯誤: ${error.message}`;
+                console.error('Connection failed!', error);
+            }
+        }
+
+        // 處理接收到的心率數據
+        function handleHeartRateChanged(event) {
+            const value = event.target.value; // 這是一個 DataView 物件
+            const heartRate = parseHeartRate(value);
+            
+            // 更新頁面上的心率值
+            heartRateValueDisplay.textContent = heartRate;
+            console.log(`Heart Rate: ${heartRate} BPM`);
+        }
+
+        // 解析從藍牙設備傳來的原始數據
+        function parseHeartRate(dataView) {
+            // 讀取第一個位元組的旗標
+            const flags = dataView.getUint8(0);
+            
+            // 檢查旗標的第0位，判斷心率值是 UINT8 還是 UINT16
+            const is16bit = (flags & 0x01) !== 0;
+            
+            if (is16bit) {
+                // 如果是16位元格式，從第1和第2個位元組讀取
+                // 'true' 表示小端序 (little-endian)
+                return dataView.getUint16(1, true);
+            } else {
+                // 如果是8位元格式，從第1個位元組讀取
+                return dataView.getUint8(1);
+            }
+        }
+
+        // 處理設備斷開連接的事件
+        function onDisconnected(event) {
+            const device = event.target;
+            statusDisplay.textContent = `設備 ${device.name} 已斷開連接。`;
+            heartRateValueDisplay.textContent = '--';
+            console.log(`Device ${device.name} is disconnected.`);
+        }
+    </script>
+
+</body>
+</html>
