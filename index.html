@@ -89,6 +89,25 @@
             color: #555;
             margin-left: 5px;
         }
+        .device-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: var(--background-color);
+            border-radius: 8px;
+            text-align: left;
+        }
+        .device-info .info-row {
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+        .device-info .info-label {
+            font-weight: bold;
+            color: #555;
+        }
+        .device-info .info-value {
+            color: var(--primary-color);
+            word-break: break-all;
+        }
     </style>
 </head>
 <body>
@@ -106,6 +125,17 @@
             <div class="value" id="heart-rate-value">--</div>
             <div class="unit">BPM</div>
         </div>
+
+        <div class="device-info" id="device-info" style="display: none;">
+            <div class="info-row">
+                <span class="info-label">裝置名稱：</span>
+                <span class="info-value" id="device-name">--</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">裝置ID：</span>
+                <span class="info-value" id="device-id">--</span>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -113,6 +143,9 @@
         const connectButton = document.getElementById('connect-button');
         const statusDisplay = document.getElementById('status');
         const heartRateValueDisplay = document.getElementById('heart-rate-value');
+        const deviceInfoDisplay = document.getElementById('device-info');
+        const deviceNameDisplay = document.getElementById('device-name');
+        const deviceIdDisplay = document.getElementById('device-id');
 
         // 當點擊連接按鈕時觸發
         connectButton.addEventListener('click', () => {
@@ -161,6 +194,13 @@
                 statusDisplay.textContent = '連接成功！正在接收數據...';
                 console.log('Notifications started');
 
+                // 顯示裝置資訊
+                deviceNameDisplay.textContent = device.name || '未知裝置';
+                deviceIdDisplay.textContent = device.id;
+                deviceInfoDisplay.style.display = 'block';
+                console.log(`Device Name: ${device.name}`);
+                console.log(`Device ID: ${device.id}`);
+
                 // 監聽設備斷開連接的事件
                 device.addEventListener('gattserverdisconnected', onDisconnected);
 
@@ -203,6 +243,9 @@
             const device = event.target;
             statusDisplay.textContent = `設備 ${device.name} 已斷開連接。`;
             heartRateValueDisplay.textContent = '--';
+            deviceInfoDisplay.style.display = 'none';
+            deviceNameDisplay.textContent = '--';
+            deviceIdDisplay.textContent = '--';
             console.log(`Device ${device.name} is disconnected.`);
         }
     </script>
