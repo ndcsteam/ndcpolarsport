@@ -29,35 +29,25 @@
         }
         
         .header {
-            text-align: center;
-            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 10px;
         }
         
         .header h1 {
-            font-size: 1.5rem;
-            margin-bottom: 5px;
+            font-size: 1.2rem;
+            margin: 0;
             color: var(--primary-color);
-        }
-        
-        .header p {
-            font-size: 0.85rem;
-            line-height: 1.4;
-            color: #666;
-            max-width: 600px;
-            margin: 0 auto 10px;
-        }
-        
-        .controls {
-            text-align: center;
-            margin-bottom: 15px;
         }
         
         #connect-button {
             background-color: var(--primary-color);
             color: white;
             border: none;
-            padding: 10px 25px;
-            font-size: 0.95rem;
+            padding: 8px 20px;
+            font-size: 0.9rem;
             font-weight: bold;
             border-radius: 6px;
             cursor: pointer;
@@ -70,14 +60,6 @@
         
         #connect-button:active {
             transform: scale(0.98);
-        }
-        
-        #status {
-            text-align: center;
-            margin-top: 8px;
-            font-size: 0.8rem;
-            color: #666;
-            min-height: 18px;
         }
         
         .devices-container {
@@ -243,13 +225,8 @@
 </head>
 <body>
     <div class="header">
-        <h1>Polar 多裝置心率監控</h1>
-        <p>支持同時連接多個Polar心率感測器，實時監控多位使用者的心率數據。</p>
-    </div>
-    
-    <div class="controls">
+        <h1>NDC Polar Sport</h1>
         <button id="connect-button">+ 連接新裝置</button>
-        <div id="status">點擊按鈕開始連接裝置...</div>
     </div>
     
     <div id="devices-container" class="devices-container">
@@ -265,7 +242,6 @@
         
         // 獲取頁面元素
         const connectButton = document.getElementById('connect-button');
-        const statusDisplay = document.getElementById('status');
         const devicesContainer = document.getElementById('devices-container');
         
         // 點擊連接按鈕
@@ -276,7 +252,6 @@
         // 連接到新的藍牙設備
         async function connectToDevice() {
             try {
-                statusDisplay.textContent = '正在掃描設備...';
                 console.log('Requesting Bluetooth Device...');
                 
                 // 請求藍牙設備
@@ -286,29 +261,25 @@
                 
                 // 檢查設備是否已經連接
                 if (connectedDevices.has(device.id)) {
-                    statusDisplay.textContent = `設備 ${device.name} 已經連接！`;
+                    console.log(`設備 ${device.name} 已經連接！`);
                     return;
                 }
                 
-                statusDisplay.textContent = `正在連接 ${device.name}...`;
                 console.log('Connecting to GATT Server...');
                 
                 // 連接到 GATT 伺服器
                 const server = await device.gatt.connect();
                 
-                statusDisplay.textContent = '正在獲取心率服務...';
                 console.log('Getting Heart Rate Service...');
                 
                 // 獲取心率服務
                 const service = await server.getPrimaryService('heart_rate');
                 
-                statusDisplay.textContent = '正在獲取心率測量特徵...';
                 console.log('Getting Heart Rate Measurement Characteristic...');
                 
                 // 獲取心率測量特徵
                 const characteristic = await service.getCharacteristic('heart_rate_measurement');
                 
-                statusDisplay.textContent = '正在訂閱心率數據...';
                 console.log('Starting notifications...');
                 
                 // 開始監聽數據
@@ -340,17 +311,14 @@
                     onDisconnected(device.id);
                 });
                 
-                statusDisplay.textContent = `成功連接 ${device.name}！`;
-                
                 // 在console輸出裝置資訊和連接狀態
-                console.log(`[裝置連接] 名稱: ${device.name}, ID: ${device.id}, 狀態: 已連接`);
+                console.log(`[裝置連接成功] 名稱: ${device.name}, ID: ${device.id}, 狀態: 已連接`);
                 
                 // 更新空狀態顯示
                 updateEmptyState();
                 
             } catch (error) {
-                statusDisplay.textContent = `連接失敗: ${error.message}`;
-                console.error('Connection failed!', error);
+                console.error('[連接失敗]', error.message, error);
             }
         }
         
