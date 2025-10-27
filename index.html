@@ -24,42 +24,42 @@
             background-color: var(--background-color);
             color: var(--text-color);
             margin: 0;
-            padding: 20px;
+            padding: 15px;
             min-height: 100vh;
         }
         
         .header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 15px;
         }
         
         .header h1 {
-            font-size: 2rem;
-            margin-bottom: 10px;
+            font-size: 1.5rem;
+            margin-bottom: 5px;
             color: var(--primary-color);
         }
         
         .header p {
-            font-size: 1rem;
-            line-height: 1.6;
+            font-size: 0.85rem;
+            line-height: 1.4;
             color: #666;
             max-width: 600px;
-            margin: 0 auto 20px;
+            margin: 0 auto 10px;
         }
         
         .controls {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 15px;
         }
         
         #connect-button {
             background-color: var(--primary-color);
             color: white;
             border: none;
-            padding: 15px 40px;
-            font-size: 1.1rem;
+            padding: 10px 25px;
+            font-size: 0.95rem;
             font-weight: bold;
-            border-radius: 8px;
+            border-radius: 6px;
             cursor: pointer;
             transition: background-color 0.3s ease, transform 0.2s ease;
         }
@@ -74,25 +74,25 @@
         
         #status {
             text-align: center;
-            margin-top: 15px;
-            font-size: 0.9rem;
+            margin-top: 8px;
+            font-size: 0.8rem;
             color: #666;
-            min-height: 20px;
+            min-height: 18px;
         }
         
         .devices-container {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 20px;
-            max-width: 1400px;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+            max-width: 100%;
             margin: 0 auto;
         }
         
         .device-card {
             background: var(--card-bg-color);
-            border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            padding: 12px;
             position: relative;
             animation: slideIn 0.3s ease-out;
         }
@@ -111,43 +111,40 @@
         .device-header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid var(--background-color);
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--background-color);
         }
         
         .device-info {
             flex: 1;
+            min-width: 0;
         }
         
         .device-name {
-            font-size: 1.2rem;
+            font-size: 0.9rem;
             font-weight: bold;
             color: var(--primary-color);
-            margin-bottom: 5px;
             word-break: break-word;
-        }
-        
-        .device-id {
-            font-size: 0.8rem;
-            color: #999;
-            font-family: monospace;
-            word-break: break-all;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         
         .disconnect-button {
             background-color: var(--error-color);
             color: white;
             border: none;
-            padding: 8px 16px;
-            font-size: 0.9rem;
+            padding: 5px 10px;
+            font-size: 0.75rem;
             font-weight: bold;
-            border-radius: 6px;
+            border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.3s ease;
             white-space: nowrap;
-            margin-left: 10px;
+            margin-left: 8px;
+            flex-shrink: 0;
         }
         
         .disconnect-button:hover {
@@ -155,75 +152,91 @@
         }
         
         .heart-rate-display {
-            text-align: center;
-            padding: 30px 20px;
+            padding: 10px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 10px;
+            border-radius: 6px;
             color: white;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
         }
         
-        .heart-rate-label {
-            font-size: 0.9rem;
+        .metric-column {
+            text-align: center;
+            padding: 5px;
+        }
+        
+        .metric-column:first-child {
+            border-right: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .metric-label {
+            font-size: 0.7rem;
             opacity: 0.9;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
         
-        .heart-rate-value {
-            font-size: 5rem;
+        .metric-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 4px;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
             font-weight: bold;
             line-height: 1;
-            margin-bottom: 5px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
         }
         
-        .heart-rate-unit {
-            font-size: 1.2rem;
+        .metric-unit {
+            font-size: 0.8rem;
             opacity: 0.9;
-        }
-        
-        .connection-status {
-            margin-top: 15px;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            text-align: center;
-        }
-        
-        .status-connected {
-            background-color: rgba(40, 167, 69, 0.1);
-            color: var(--success-color);
-            border: 1px solid var(--success-color);
-        }
-        
-        .status-disconnected {
-            background-color: rgba(220, 53, 69, 0.1);
-            color: var(--error-color);
-            border: 1px solid var(--error-color);
         }
         
         .empty-state {
             text-align: center;
-            padding: 60px 20px;
+            padding: 40px 20px;
             color: #999;
+            grid-column: 1 / -1;
         }
         
         .empty-state-icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
+            font-size: 3rem;
+            margin-bottom: 15px;
             opacity: 0.3;
         }
         
         .empty-state-text {
-            font-size: 1.1rem;
+            font-size: 0.95rem;
+        }
+        
+        @media (max-width: 1400px) {
+            .devices-container {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
         }
         
         @media (max-width: 768px) {
             .devices-container {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
             }
             
-            .heart-rate-value {
-                font-size: 4rem;
+            .metric-value {
+                font-size: 1.8rem;
+            }
+            
+            .metric-unit {
+                font-size: 0.7rem;
+            }
+            
+            .metric-label {
+                font-size: 0.65rem;
+            }
+            
+            .device-name {
+                font-size: 0.8rem;
             }
         }
     </style>
@@ -328,7 +341,9 @@
                 });
                 
                 statusDisplay.textContent = `成功連接 ${device.name}！`;
-                console.log(`Device ${device.name} connected successfully`);
+                
+                // 在console輸出裝置資訊和連接狀態
+                console.log(`[裝置連接] 名稱: ${device.name}, ID: ${device.id}, 狀態: 已連接`);
                 
                 // 更新空狀態顯示
                 updateEmptyState();
@@ -349,7 +364,6 @@
                 <div class="device-header">
                     <div class="device-info">
                         <div class="device-name">${deviceData.device.name || '未知裝置'}</div>
-                        <div class="device-id">${deviceId}</div>
                     </div>
                     <button class="disconnect-button" onclick="disconnectDevice('${deviceId}')">
                         斷開
@@ -357,17 +371,27 @@
                 </div>
                 
                 <div class="heart-rate-display">
-                    <div class="heart-rate-label">即時心率</div>
-                    <div class="heart-rate-value" id="heart-rate-${deviceId}">--</div>
-                    <div class="heart-rate-unit">BPM</div>
-                </div>
-                
-                <div class="connection-status status-connected" id="status-${deviceId}">
-                    ● 已連接
+                    <div class="metric-column">
+                        <div class="metric-label">心率</div>
+                        <div class="metric-row">
+                            <div class="metric-value" id="heart-rate-${deviceId}">--</div>
+                            <div class="metric-unit">BPM</div>
+                        </div>
+                    </div>
+                    <div class="metric-column">
+                        <div class="metric-label">活動率</div>
+                        <div class="metric-row">
+                            <div class="metric-value" id="activity-rate-${deviceId}">--</div>
+                            <div class="metric-unit">%</div>
+                        </div>
+                    </div>
                 </div>
             `;
             
             devicesContainer.appendChild(card);
+            
+            // 在console輸出卡片創建信息
+            console.log(`[卡片創建] 裝置: ${deviceData.device.name}, ID: ${deviceId}`);
         }
         
         // 處理心率數據變化
@@ -375,19 +399,29 @@
             const value = event.target.value;
             const heartRate = parseHeartRate(value);
             
+            // 計算活動率: (心率/(220-20))*100 = (心率/200)*100
+            const activityRate = ((heartRate / 200) * 100).toFixed(1);
+            
             // 更新設備數據
             const deviceData = connectedDevices.get(deviceId);
             if (deviceData) {
                 deviceData.heartRate = heartRate;
+                deviceData.activityRate = activityRate;
             }
             
-            // 更新UI顯示
+            // 更新心率UI顯示
             const heartRateElement = document.getElementById(`heart-rate-${deviceId}`);
             if (heartRateElement) {
                 heartRateElement.textContent = heartRate;
             }
             
-            console.log(`Device ${deviceId}: Heart Rate = ${heartRate} BPM`);
+            // 更新活動率UI顯示
+            const activityRateElement = document.getElementById(`activity-rate-${deviceId}`);
+            if (activityRateElement) {
+                activityRateElement.textContent = activityRate;
+            }
+            
+            console.log(`Device ${deviceId}: Heart Rate = ${heartRate} BPM, Activity Rate = ${activityRate}%`);
         }
         
         // 解析心率數據
@@ -417,19 +451,20 @@
             if (deviceData) {
                 deviceData.connected = false;
                 
-                // 更新UI狀態
-                const statusElement = document.getElementById(`status-${deviceId}`);
-                if (statusElement) {
-                    statusElement.className = 'connection-status status-disconnected';
-                    statusElement.textContent = '● 已斷開連接';
-                }
-                
+                // 更新心率顯示
                 const heartRateElement = document.getElementById(`heart-rate-${deviceId}`);
                 if (heartRateElement) {
                     heartRateElement.textContent = '--';
                 }
                 
-                console.log(`Device ${deviceId} disconnected`);
+                // 更新活動率顯示
+                const activityRateElement = document.getElementById(`activity-rate-${deviceId}`);
+                if (activityRateElement) {
+                    activityRateElement.textContent = '--';
+                }
+                
+                // 在console輸出斷開連接信息
+                console.log(`[裝置斷開] ID: ${deviceId}, 名稱: ${deviceData.device.name}, 狀態: 已斷開連接`);
                 
                 // 3秒後移除卡片
                 setTimeout(() => {
