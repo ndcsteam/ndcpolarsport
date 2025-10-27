@@ -141,6 +141,28 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 8px;
+            transition: background 0.5s ease;
+        }
+        
+        /* 活動率區間顏色 */
+        .activity-zone-1 {
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%) !important; /* 青色 */
+        }
+        
+        .activity-zone-2 {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important; /* 綠色 */
+        }
+        
+        .activity-zone-3 {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important; /* 黃色 */
+        }
+        
+        .activity-zone-4 {
+            background: linear-gradient(135deg, #fb923c 0%, #f97316 100%) !important; /* 橙色 */
+        }
+        
+        .activity-zone-5 {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important; /* 紅色 */
         }
         
         .metric-column {
@@ -338,7 +360,7 @@
                     </button>
                 </div>
                 
-                <div class="heart-rate-display">
+                <div class="heart-rate-display" id="display-${deviceId}">
                     <div class="metric-column">
                         <div class="metric-label">心率</div>
                         <div class="metric-row">
@@ -360,6 +382,17 @@
             
             // 在console輸出卡片創建信息
             console.log(`[卡片創建] 裝置: ${deviceData.device.name}, ID: ${deviceId}`);
+        }
+        
+        // 根據活動率獲取區間
+        function getActivityZone(activityRate) {
+            const rate = parseFloat(activityRate);
+            if (rate >= 90) return 5;      // 最大強度 90-100%
+            if (rate >= 80) return 4;      // 高強度 80-90%
+            if (rate >= 70) return 3;      // 中等強度 70-80%
+            if (rate >= 60) return 2;      // 輕度 60-70%
+            if (rate >= 50) return 1;      // 非常輕 50-60%
+            return 0;                      // 低於50%，使用預設顏色
         }
         
         // 處理心率數據變化
@@ -389,7 +422,20 @@
                 activityRateElement.textContent = activityRate;
             }
             
-            console.log(`Device ${deviceId}: Heart Rate = ${heartRate} BPM, Activity Rate = ${activityRate}%`);
+            // 根據活動率更新卡片顏色
+            const displayElement = document.getElementById(`display-${deviceId}`);
+            if (displayElement) {
+                // 移除所有活動區間的class
+                displayElement.classList.remove('activity-zone-1', 'activity-zone-2', 'activity-zone-3', 'activity-zone-4', 'activity-zone-5');
+                
+                // 添加對應的活動區間class
+                const zone = getActivityZone(activityRate);
+                if (zone > 0) {
+                    displayElement.classList.add(`activity-zone-${zone}`);
+                }
+            }
+            
+            console.log(`Device ${deviceId}: Heart Rate = ${heartRate} BPM, Activity Rate = ${activityRate}%, Zone = ${getActivityZone(activityRate)}`);
         }
         
         // 解析心率數據
@@ -429,6 +475,12 @@
                 const activityRateElement = document.getElementById(`activity-rate-${deviceId}`);
                 if (activityRateElement) {
                     activityRateElement.textContent = '--';
+                }
+                
+                // 重置卡片顏色為預設
+                const displayElement = document.getElementById(`display-${deviceId}`);
+                if (displayElement) {
+                    displayElement.classList.remove('activity-zone-1', 'activity-zone-2', 'activity-zone-3', 'activity-zone-4', 'activity-zone-5');
                 }
                 
                 // 在console輸出斷開連接信息
