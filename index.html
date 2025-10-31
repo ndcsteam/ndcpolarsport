@@ -32,8 +32,9 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 20px;
+            gap: 15px;
             margin-bottom: 10px;
+            flex-wrap: wrap;
         }
         
         .header h1 {
@@ -42,7 +43,12 @@
             color: var(--primary-color);
         }
         
-        #connect-button {
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        #connect-button, #connect-all-button {
             background-color: var(--primary-color);
             color: white;
             border: none;
@@ -54,12 +60,26 @@
             transition: background-color 0.3s ease, transform 0.2s ease;
         }
         
+        #connect-all-button {
+            background-color: var(--success-color);
+        }
+        
         #connect-button:hover {
             background-color: #0056b3;
         }
         
-        #connect-button:active {
+        #connect-all-button:hover {
+            background-color: #218838;
+        }
+        
+        #connect-button:active, #connect-all-button:active {
             transform: scale(0.98);
+        }
+        
+        #connect-button:disabled, #connect-all-button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.6;
         }
         
         .devices-container {
@@ -248,7 +268,10 @@
 <body>
     <div class="header">
         <h1>NDC Polar Sport</h1>
-        <button id="connect-button">+ 連接新裝置</button>
+        <div class="button-group">
+            <button id="connect-button">+ 連接新裝置</button>
+            <button id="connect-all-button">⚡ 連接所有裝置</button>
+        </div>
     </div>
     
     <div id="devices-container" class="devices-container">
@@ -267,6 +290,7 @@
         
         // 獲取頁面元素
         const connectButton = document.getElementById('connect-button');
+        const connectAllButton = document.getElementById('connect-all-button');
         const devicesContainer = document.getElementById('devices-container');
         
         // 讀取並解析CSV文件
@@ -321,6 +345,129 @@
         connectButton.addEventListener('click', () => {
             connectToDevice();
         });
+        
+        // 點擊連接所有裝置按鈕
+        connectAllButton.addEventListener('click', () => {
+            connectAllDevices();
+        });
+        
+        // 連接所有已配對的裝置
+        async function connectAllDevices() {
+            try {
+                console.log('[連接所有裝置] 開始掃描已配對的裝置...');
+                
+                // 禁用按鈕防止重複點擊
+                connectAllButton.disabled = true;
+                connectAllButton.textContent = '⏳ 連接中...';
+                
+                // 獲取所有已配對的藍牙設備
+                const devices = await navigator.bluetooth.getDevices();
+                console.log(`[連接所有裝置] 找到 ${devices.length} 個已配對的裝置`);
+                
+                if (devices.length === 0) {
+                    console.log('[連接所有裝置] 沒有找到已配對的裝置，請先手動連接至少一個裝置');
+                    alert('沒有找到已配對的裝置。\n請先使用「+ 連接新裝置」按鈕手動連接至少一個Polar裝置。');
+                    connectAllButton.disabled = false;
+                    connectAllButton.textContent = '⚡ 連接所有裝置';
+                    return;
+                }
+                
+                let successCount = 0;
+                let failCount = 0;
+                
+                // 逐一連接每個設備
+                for (const device of devices) {
+                    try {
+                        // 檢查設備是否已經連接
+                        if (connectedDevices.has(device.id)) {
+                            console.log(`[連接所有裝置] ${device.name || device.id} 已連接，跳過`);
+                            continue;
+                        }
+                        
+                        // 檢查設備是否支援心率服務（Polar設備）
+                        console.log(`[連接所有裝置] 嘗試連接: ${device.name || device.id}`);
+                        
+                        await connectSpecificDevice(device);
+                        successCount++;
+                        
+                        // 添加延遲避免連接過快
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        
+                    } catch (error) {
+                        console.error(`[連接所有裝置] 連接 ${device.name || device.id} 失敗:`, error);
+                        failCount++;
+                    }
+                }
+                
+                console.log(`[連接所有裝置] 完成！成功: ${successCount}, 失敗: ${failCount}`);
+                
+                // 恢復按鈕
+                connectAllButton.disabled = false;
+                connectAllButton.textContent = '⚡ 連接所有裝置';
+                
+            } catch (error) {
+                console.error('[連接所有裝置] 錯誤:', error);
+                connectAllButton.disabled = false;
+                connectAllButton.textContent = '⚡ 連接所有裝置';
+                
+                if (error.name === 'NotFoundError') {
+                    alert('您的瀏覽器不支援此功能，或需要先手動配對裝置。');
+                }
+            }
+        }
+        
+        // 連接特定的藍牙設備（用於連接所有裝置功能）
+        async function connectSpecificDevice(device) {
+            try {
+                // 連接到 GATT 伺服器
+                const server = await device.gatt.connect();
+                
+                // 獲取心率服務
+                const service = await server.getPrimaryService('heart_rate');
+                
+                // 獲取心率測量特徵
+                const characteristic = await service.getCharacteristic('heart_rate_measurement');
+                
+                // 開始監聽數據
+                await characteristic.startNotifications();
+                
+                // 創建設備數據對象
+                const deviceData = {
+                    device: device,
+                    server: server,
+                    service: service,
+                    characteristic: characteristic,
+                    heartRate: '--',
+                    connected: true
+                };
+                
+                // 添加到已連接設備列表
+                connectedDevices.set(device.id, deviceData);
+                
+                // 創建設備卡片UI
+                createDeviceCard(device.id, deviceData);
+                
+                // 監聽心率數據變化
+                characteristic.addEventListener('characteristicvaluechanged', (event) => {
+                    handleHeartRateChanged(device.id, event);
+                });
+                
+                // 監聽設備斷開連接
+                device.addEventListener('gattserverdisconnected', () => {
+                    onDisconnected(device.id);
+                });
+                
+                // 在console輸出裝置資訊和連接狀態
+                const deviceNum = getDeviceNum(device.name, device.id);
+                console.log(`[裝置連接成功] Num: ${deviceNum}, 名稱: ${device.name}, 完整ID: ${device.id}, 狀態: 已連接`);
+                
+                // 更新空狀態顯示
+                updateEmptyState();
+                
+            } catch (error) {
+                throw error;
+            }
+        }
         
         // 連接到新的藍牙設備
         async function connectToDevice() {
