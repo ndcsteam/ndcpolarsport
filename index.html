@@ -48,7 +48,7 @@
             gap: 10px;
         }
         
-        #connect-button, #connect-all-button {
+        #connect-button {
             background-color: var(--primary-color);
             color: white;
             border: none;
@@ -60,23 +60,15 @@
             transition: background-color 0.3s ease, transform 0.2s ease;
         }
         
-        #connect-all-button {
-            background-color: var(--success-color);
-        }
-        
         #connect-button:hover {
             background-color: #0056b3;
         }
         
-        #connect-all-button:hover {
-            background-color: #218838;
-        }
-        
-        #connect-button:active, #connect-all-button:active {
+        #connect-button:active {
             transform: scale(0.98);
         }
         
-        #connect-button:disabled, #connect-all-button:disabled {
+        #connect-button:disabled {
             background-color: #6c757d;
             cursor: not-allowed;
             opacity: 0.6;
@@ -269,8 +261,7 @@
     <div class="header">
         <h1>NDC Polar Sport</h1>
         <div class="button-group">
-            <button id="connect-button">+ 連接新裝置</button>
-            <button id="connect-all-button">⚡ 連接多個裝置</button>
+            <button id="connect-button">+ 連接裝置</button>
         </div>
     </div>
     
@@ -290,7 +281,6 @@
         
         // 獲取頁面元素
         const connectButton = document.getElementById('connect-button');
-        const connectAllButton = document.getElementById('connect-all-button');
         const devicesContainer = document.getElementById('devices-container');
         
         // 讀取並解析CSV文件
@@ -345,152 +335,6 @@
         connectButton.addEventListener('click', () => {
             connectToDevice();
         });
-        
-        // 點擊連接所有裝置按鈕
-        connectAllButton.addEventListener('click', () => {
-            connectAllDevices();
-        });
-        
-        // 連續連接多個裝置
-        async function connectAllDevices() {
-            try {
-                console.log('[連續連接] 開始連續連接模式...');
-                
-                // 禁用按鈕防止重複點擊
-                connectAllButton.disabled = true;
-                connectAllButton.textContent = '⏳ 選擇裝置...';
-                
-                let successCount = 0;
-                let failCount = 0;
-                let continueConnecting = true;
-                
-                // 顯示提示
-                alert('即將進入連續連接模式。\n\n請依次選擇要連接的Polar裝置。\n完成後點擊「取消」結束選擇。');
-                
-                // 循環讓用戶選擇裝置
-                while (continueConnecting) {
-                    try {
-                        console.log(`[連續連接] 等待選擇第 ${successCount + failCount + 1} 個裝置...`);
-                        
-                        // 請求用戶選擇藍牙設備
-                        const device = await navigator.bluetooth.requestDevice({
-                            filters: [{ services: ['heart_rate'] }]
-                        });
-                        
-                        // 檢查設備是否已經連接
-                        if (connectedDevices.has(device.id)) {
-                            console.log(`[連續連接] ${device.name || device.id} 已連接，跳過`);
-                            const skipConfirm = confirm(`裝置 "${device.name}" 已連接。\n\n是否繼續選擇下一個裝置？`);
-                            if (!skipConfirm) {
-                                continueConnecting = false;
-                                break;
-                            }
-                            continue;
-                        }
-                        
-                        console.log(`[連續連接] 嘗試連接: ${device.name || device.id}`);
-                        connectAllButton.textContent = `⏳ 連接中 (${successCount + 1})...`;
-                        
-                        await connectSpecificDevice(device);
-                        successCount++;
-                        
-                        console.log(`[連續連接] 成功連接 ${device.name}，總計: ${successCount} 個`);
-                        
-                        // 詢問是否繼續
-                        connectAllButton.textContent = '⏳ 等待選擇...';
-                        const continueConfirm = confirm(`已成功連接 ${successCount} 個裝置。\n\n是否繼續連接更多裝置？`);
-                        if (!continueConfirm) {
-                            continueConnecting = false;
-                        }
-                        
-                        // 添加延遲避免連接過快
-                        await new Promise(resolve => setTimeout(resolve, 300));
-                        
-                    } catch (error) {
-                        // 用戶取消選擇或連接失敗
-                        if (error.name === 'NotFoundError' || error.message.includes('User cancelled')) {
-                            console.log('[連續連接] 用戶取消選擇');
-                            continueConnecting = false;
-                        } else {
-                            console.error('[連續連接] 連接失敗:', error);
-                            failCount++;
-                            const retryConfirm = confirm(`連接失敗：${error.message}\n\n是否繼續選擇下一個裝置？`);
-                            if (!retryConfirm) {
-                                continueConnecting = false;
-                            }
-                        }
-                    }
-                }
-                
-                console.log(`[連續連接] 完成！成功: ${successCount}, 失敗: ${failCount}`);
-                
-                if (successCount > 0) {
-                    alert(`連接完成！\n成功: ${successCount} 個裝置\n失敗: ${failCount} 個裝置`);
-                }
-                
-                // 恢復按鈕
-                connectAllButton.disabled = false;
-                connectAllButton.textContent = '⚡ 連接多個裝置';
-                
-            } catch (error) {
-                console.error('[連續連接] 錯誤:', error);
-                connectAllButton.disabled = false;
-                connectAllButton.textContent = '⚡ 連接多個裝置';
-            }
-        }
-        
-        // 連接特定的藍牙設備（用於連接所有裝置功能）
-        async function connectSpecificDevice(device) {
-            try {
-                // 連接到 GATT 伺服器
-                const server = await device.gatt.connect();
-                
-                // 獲取心率服務
-                const service = await server.getPrimaryService('heart_rate');
-                
-                // 獲取心率測量特徵
-                const characteristic = await service.getCharacteristic('heart_rate_measurement');
-                
-                // 開始監聽數據
-                await characteristic.startNotifications();
-                
-                // 創建設備數據對象
-                const deviceData = {
-                    device: device,
-                    server: server,
-                    service: service,
-                    characteristic: characteristic,
-                    heartRate: '--',
-                    connected: true
-                };
-                
-                // 添加到已連接設備列表
-                connectedDevices.set(device.id, deviceData);
-                
-                // 創建設備卡片UI
-                createDeviceCard(device.id, deviceData);
-                
-                // 監聽心率數據變化
-                characteristic.addEventListener('characteristicvaluechanged', (event) => {
-                    handleHeartRateChanged(device.id, event);
-                });
-                
-                // 監聽設備斷開連接
-                device.addEventListener('gattserverdisconnected', () => {
-                    onDisconnected(device.id);
-                });
-                
-                // 在console輸出裝置資訊和連接狀態
-                const deviceNum = getDeviceNum(device.name, device.id);
-                console.log(`[裝置連接成功] Num: ${deviceNum}, 名稱: ${device.name}, 完整ID: ${device.id}, 狀態: 已連接`);
-                
-                // 更新空狀態顯示
-                updateEmptyState();
-                
-            } catch (error) {
-                throw error;
-            }
-        }
         
         // 連接到新的藍牙設備
         async function connectToDevice() {
