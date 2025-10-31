@@ -262,9 +262,45 @@
         // 儲存所有已連接的設備
         const connectedDevices = new Map();
         
+        // 儲存ID到num的映射
+        const idToNumMap = new Map();
+        
         // 獲取頁面元素
         const connectButton = document.getElementById('connect-button');
         const devicesContainer = document.getElementById('devices-container');
+        
+        // 讀取並解析CSV文件
+        async function loadIdMapping() {
+            try {
+                const response = await fetch('polar_id_match.csv');
+                const csvText = await response.text();
+                const lines = csvText.trim().split('\n');
+                
+                // 跳過標題行，從第二行開始解析
+                for (let i = 1; i < lines.length; i++) {
+                    const [num, id] = lines[i].split(',');
+                    if (num && id) {
+                        // 將ID轉換為大寫並儲存映射
+                        idToNumMap.set(id.trim().toUpperCase(), num.trim());
+                    }
+                }
+                console.log(`[CSV載入成功] 已載入 ${idToNumMap.size} 個ID映射`);
+            } catch (error) {
+                console.error('[CSV載入失敗]', error);
+            }
+        }
+        
+        // 根據裝置ID獲取對應的num
+        function getDeviceNum(deviceId) {
+            // 嘗試從完整ID中提取8位十六進制部分
+            // 藍牙設備ID格式通常是 "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+            // 我們需要提取前8位
+            const shortId = deviceId.replace(/-/g, '').substring(0, 8).toUpperCase();
+            return idToNumMap.get(shortId) || deviceId.substring(0, 8);
+        }
+        
+        // 頁面載入時讀取CSV
+        loadIdMapping();
         
         // 點擊連接按鈕
         connectButton.addEventListener('click', () => {
@@ -334,7 +370,8 @@
                 });
                 
                 // 在console輸出裝置資訊和連接狀態
-                console.log(`[裝置連接成功] 名稱: ${device.name}, ID: ${device.id}, 狀態: 已連接`);
+                const deviceNum = getDeviceNum(device.id);
+                console.log(`[裝置連接成功] Num: ${deviceNum}, 名稱: ${device.name}, ID: ${device.id}, 狀態: 已連接`);
                 
                 // 更新空狀態顯示
                 updateEmptyState();
@@ -350,10 +387,13 @@
             card.className = 'device-card';
             card.id = `device-${deviceId}`;
             
+            // 獲取對應的num
+            const displayNum = getDeviceNum(deviceId);
+            
             card.innerHTML = `
                 <div class="device-header">
                     <div class="device-info">
-                        <div class="device-name">${deviceData.device.name || '未知裝置'}</div>
+                        <div class="device-name">${displayNum}</div>
                     </div>
                     <button class="disconnect-button" onclick="disconnectDevice('${deviceId}')">
                         斷開
@@ -381,7 +421,7 @@
             devicesContainer.appendChild(card);
             
             // 在console輸出卡片創建信息
-            console.log(`[卡片創建] 裝置: ${deviceData.device.name}, ID: ${deviceId}`);
+            console.log(`[卡片創建] Num: ${displayNum}, 裝置: ${deviceData.device.name}, ID: ${deviceId}`);
         }
         
         // 根據活動率獲取區間
