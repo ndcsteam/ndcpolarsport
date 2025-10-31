@@ -290,13 +290,28 @@
             }
         }
         
-        // 根據裝置ID獲取對應的num
-        function getDeviceNum(deviceId) {
-            // 嘗試從完整ID中提取8位十六進制部分
-            // 藍牙設備ID格式通常是 "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
-            // 我們需要提取前8位
-            const shortId = deviceId.replace(/-/g, '').substring(0, 8).toUpperCase();
-            return idToNumMap.get(shortId) || deviceId.substring(0, 8);
+        // 根據裝置名稱或ID獲取對應的num
+        function getDeviceNum(deviceName, deviceId) {
+            // Polar裝置名稱格式通常是 "Polar OH1 3B574521"
+            // 提取最後8位十六進制字符
+            if (deviceName) {
+                const match = deviceName.match(/([0-9A-Fa-f]{8})$/);
+                if (match) {
+                    const hexId = match[1].toUpperCase();
+                    console.log(`[ID匹配] 從名稱 "${deviceName}" 提取到 ID: ${hexId}`);
+                    const num = idToNumMap.get(hexId);
+                    if (num) {
+                        console.log(`[ID匹配成功] ${hexId} → Num: ${num}`);
+                        return num;
+                    } else {
+                        console.log(`[ID未匹配] ${hexId} 在CSV中找不到對應的num`);
+                    }
+                }
+            }
+            
+            // 如果從名稱中無法提取，返回設備ID的前8位作為備用
+            console.log(`[ID匹配失敗] 無法從名稱提取ID，使用預設: ${deviceId.substring(0, 8)}`);
+            return deviceId.substring(0, 8);
         }
         
         // 頁面載入時讀取CSV
@@ -370,8 +385,8 @@
                 });
                 
                 // 在console輸出裝置資訊和連接狀態
-                const deviceNum = getDeviceNum(device.id);
-                console.log(`[裝置連接成功] Num: ${deviceNum}, 名稱: ${device.name}, ID: ${device.id}, 狀態: 已連接`);
+                const deviceNum = getDeviceNum(device.name, device.id);
+                console.log(`[裝置連接成功] Num: ${deviceNum}, 名稱: ${device.name}, 完整ID: ${device.id}, 狀態: 已連接`);
                 
                 // 更新空狀態顯示
                 updateEmptyState();
@@ -388,7 +403,7 @@
             card.id = `device-${deviceId}`;
             
             // 獲取對應的num
-            const displayNum = getDeviceNum(deviceId);
+            const displayNum = getDeviceNum(deviceData.device.name, deviceId);
             
             card.innerHTML = `
                 <div class="device-header">
@@ -421,7 +436,7 @@
             devicesContainer.appendChild(card);
             
             // 在console輸出卡片創建信息
-            console.log(`[卡片創建] Num: ${displayNum}, 裝置: ${deviceData.device.name}, ID: ${deviceId}`);
+            console.log(`[卡片創建] Num: ${displayNum}, 裝置: ${deviceData.device.name}, 完整ID: ${deviceId}`);
         }
         
         // 根據活動率獲取區間
