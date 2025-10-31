@@ -270,7 +270,7 @@
         <h1>NDC Polar Sport</h1>
         <div class="button-group">
             <button id="connect-button">+ 連接新裝置</button>
-            <button id="connect-all-button">⚡ 連接所有裝置</button>
+            <button id="connect-all-button">⚡ 連接多個裝置</button>
         </div>
     </div>
     
@@ -351,68 +351,91 @@
             connectAllDevices();
         });
         
-        // 連接所有已配對的裝置
+        // 連續連接多個裝置
         async function connectAllDevices() {
             try {
-                console.log('[連接所有裝置] 開始掃描已配對的裝置...');
+                console.log('[連續連接] 開始連續連接模式...');
                 
                 // 禁用按鈕防止重複點擊
                 connectAllButton.disabled = true;
-                connectAllButton.textContent = '⏳ 連接中...';
-                
-                // 獲取所有已配對的藍牙設備
-                const devices = await navigator.bluetooth.getDevices();
-                console.log(`[連接所有裝置] 找到 ${devices.length} 個已配對的裝置`);
-                
-                if (devices.length === 0) {
-                    console.log('[連接所有裝置] 沒有找到已配對的裝置，請先手動連接至少一個裝置');
-                    alert('沒有找到已配對的裝置。\n請先使用「+ 連接新裝置」按鈕手動連接至少一個Polar裝置。');
-                    connectAllButton.disabled = false;
-                    connectAllButton.textContent = '⚡ 連接所有裝置';
-                    return;
-                }
+                connectAllButton.textContent = '⏳ 選擇裝置...';
                 
                 let successCount = 0;
                 let failCount = 0;
+                let continueConnecting = true;
                 
-                // 逐一連接每個設備
-                for (const device of devices) {
+                // 顯示提示
+                alert('即將進入連續連接模式。\n\n請依次選擇要連接的Polar裝置。\n完成後點擊「取消」結束選擇。');
+                
+                // 循環讓用戶選擇裝置
+                while (continueConnecting) {
                     try {
+                        console.log(`[連續連接] 等待選擇第 ${successCount + failCount + 1} 個裝置...`);
+                        
+                        // 請求用戶選擇藍牙設備
+                        const device = await navigator.bluetooth.requestDevice({
+                            filters: [{ services: ['heart_rate'] }]
+                        });
+                        
                         // 檢查設備是否已經連接
                         if (connectedDevices.has(device.id)) {
-                            console.log(`[連接所有裝置] ${device.name || device.id} 已連接，跳過`);
+                            console.log(`[連續連接] ${device.name || device.id} 已連接，跳過`);
+                            const skipConfirm = confirm(`裝置 "${device.name}" 已連接。\n\n是否繼續選擇下一個裝置？`);
+                            if (!skipConfirm) {
+                                continueConnecting = false;
+                                break;
+                            }
                             continue;
                         }
                         
-                        // 檢查設備是否支援心率服務（Polar設備）
-                        console.log(`[連接所有裝置] 嘗試連接: ${device.name || device.id}`);
+                        console.log(`[連續連接] 嘗試連接: ${device.name || device.id}`);
+                        connectAllButton.textContent = `⏳ 連接中 (${successCount + 1})...`;
                         
                         await connectSpecificDevice(device);
                         successCount++;
                         
+                        console.log(`[連續連接] 成功連接 ${device.name}，總計: ${successCount} 個`);
+                        
+                        // 詢問是否繼續
+                        connectAllButton.textContent = '⏳ 等待選擇...';
+                        const continueConfirm = confirm(`已成功連接 ${successCount} 個裝置。\n\n是否繼續連接更多裝置？`);
+                        if (!continueConfirm) {
+                            continueConnecting = false;
+                        }
+                        
                         // 添加延遲避免連接過快
-                        await new Promise(resolve => setTimeout(resolve, 500));
+                        await new Promise(resolve => setTimeout(resolve, 300));
                         
                     } catch (error) {
-                        console.error(`[連接所有裝置] 連接 ${device.name || device.id} 失敗:`, error);
-                        failCount++;
+                        // 用戶取消選擇或連接失敗
+                        if (error.name === 'NotFoundError' || error.message.includes('User cancelled')) {
+                            console.log('[連續連接] 用戶取消選擇');
+                            continueConnecting = false;
+                        } else {
+                            console.error('[連續連接] 連接失敗:', error);
+                            failCount++;
+                            const retryConfirm = confirm(`連接失敗：${error.message}\n\n是否繼續選擇下一個裝置？`);
+                            if (!retryConfirm) {
+                                continueConnecting = false;
+                            }
+                        }
                     }
                 }
                 
-                console.log(`[連接所有裝置] 完成！成功: ${successCount}, 失敗: ${failCount}`);
+                console.log(`[連續連接] 完成！成功: ${successCount}, 失敗: ${failCount}`);
+                
+                if (successCount > 0) {
+                    alert(`連接完成！\n成功: ${successCount} 個裝置\n失敗: ${failCount} 個裝置`);
+                }
                 
                 // 恢復按鈕
                 connectAllButton.disabled = false;
-                connectAllButton.textContent = '⚡ 連接所有裝置';
+                connectAllButton.textContent = '⚡ 連接多個裝置';
                 
             } catch (error) {
-                console.error('[連接所有裝置] 錯誤:', error);
+                console.error('[連續連接] 錯誤:', error);
                 connectAllButton.disabled = false;
-                connectAllButton.textContent = '⚡ 連接所有裝置';
-                
-                if (error.name === 'NotFoundError') {
-                    alert('您的瀏覽器不支援此功能，或需要先手動配對裝置。');
-                }
+                connectAllButton.textContent = '⚡ 連接多個裝置';
             }
         }
         
